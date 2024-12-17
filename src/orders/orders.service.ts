@@ -1,25 +1,75 @@
-import { Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
+import { RpcException } from '@nestjs/microservices';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { ChangeStatusDto } from './dto/change-status.dto';
 import { CreateOrderDto } from './dto/create-order.dto';
-import { UpdateOrderDto } from './dto/update-order.dto';
+import { PaginationOrderDto } from './dto/pagination-order.dto';
 
 @Injectable()
 export class OrdersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prismaService: PrismaService) {}
 
   create(createOrderDto: CreateOrderDto) {
-    return this.prisma.order.create({ data: createOrderDto });
+    return this.prismaService.order.create({ data: createOrderDto });
   }
 
-  findAll() {
-    return `This action returns all orders`;
+  async findAll(paginationOrderDto: PaginationOrderDto) {
+    const { page, limit, status } = paginationOrderDto;
+
+    const total = await this.prismaService.order.count({
+      where: {
+        status,
+      },
+    });
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data: await this.prismaService.order.findMany({
+        where: {
+          status,
+        },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      meta: {
+        pagination: {
+          currentPage: page,
+          totalPages: totalPages,
+          perPage: limit,
+          totalItems: total,
+        },
+      },
+    };
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} order`;
+  async findOne(id: string) {
+    const order = await this.prismaService.order.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (!order) {
+      throw new RpcException({
+        statusCode: HttpStatus.NOT_FOUND,
+        message: 'Order not found',
+        error: 'Not Found',
+      });
+    }
+
+    return order;
   }
 
-  changeStatus(id: number, updateOrderDto: UpdateOrderDto) {
-    return `This action updates a #${id} order`;
+  async changeStatus(ChangeStatusDto: ChangeStatusDto) {
+    await this.findOne(ChangeStatusDto.id);
+
+    return this.prismaService.order.update({
+      where: {
+        id: ChangeStatusDto.id,
+      },
+      data: {
+        status: ChangeStatusDto.status,
+      },
+    });
   }
 }
