@@ -1,7 +1,7 @@
 import { OrderStatus } from '@prisma/client';
 import { IsEnum, IsUUID } from 'class-validator';
 
-export class ChangeStatusDto {
+export class ChangeStatusOrderDto {
   @IsUUID()
   id: string;
 

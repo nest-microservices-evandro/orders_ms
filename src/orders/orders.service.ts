@@ -1,13 +1,22 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { ChangeStatusDto } from './dto/change-status.dto';
+import { ChangeStatusOrderDto } from './dto/change-status-order.dto';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { ErrorOrderDto } from './dto/error-order.dto';
 import { PaginationOrderDto } from './dto/pagination-order.dto';
 
 @Injectable()
 export class OrdersService {
   constructor(private readonly prismaService: PrismaService) {}
+
+  private microServiceError(errorOrderDto: ErrorOrderDto) {
+    throw new RpcException({
+      statusCode: errorOrderDto.statusCode,
+      message: errorOrderDto.message,
+      error: errorOrderDto.error,
+    });
+  }
 
   create(createOrderDto: CreateOrderDto) {
     return this.prismaService.order.create({ data: createOrderDto });
@@ -50,7 +59,7 @@ export class OrdersService {
     });
 
     if (!order) {
-      throw new RpcException({
+      this.microServiceError({
         statusCode: HttpStatus.NOT_FOUND,
         message: 'Order not found',
         error: 'Not Found',
@@ -60,15 +69,15 @@ export class OrdersService {
     return order;
   }
 
-  async changeStatus(ChangeStatusDto: ChangeStatusDto) {
-    await this.findOne(ChangeStatusDto.id);
+  async changeStatus(changeStatusOrderDto: ChangeStatusOrderDto) {
+    await this.findOne(changeStatusOrderDto.id);
 
     return this.prismaService.order.update({
       where: {
-        id: ChangeStatusDto.id,
+        id: changeStatusOrderDto.id,
       },
       data: {
-        status: ChangeStatusDto.status,
+        status: changeStatusOrderDto.status,
       },
     });
   }
