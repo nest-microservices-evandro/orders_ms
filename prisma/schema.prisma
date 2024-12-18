@@ -29,5 +29,21 @@ model Order {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
+  OrderItems OrderItem[]
+
   @@map("orders")
+}
+
+model OrderItem {
+  id        String   @id @default(uuid())
+  productId Int
+  quantity  Int
+  price     Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  order   Order  @relation(fields: [orderId], references: [id])
+  orderId String
+
+  @@map("order_item")
 }
