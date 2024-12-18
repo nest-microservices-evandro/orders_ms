@@ -7,9 +7,9 @@ import { envs } from './configs/envs';
 async function bootstrap() {
   const logger = new Logger('NestApplication');
   const app = await NestFactory.createMicroservice(AppModule, {
-    transport: Transport.TCP,
+    transport: Transport.NATS,
     options: {
-      port: envs.PORT,
+      servers: envs.NATS_SERVERS,
     },
   });
   app.useGlobalPipes(
